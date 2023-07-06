@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import "./Signup.css";
 import googleicon from "../../Assets/google-icon.svg";
 import SidebarImage from "../../Assets/SidebarImageSignup.jpg";
 import {Link, useNavigate} from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleOneTapLogin } from '@react-oauth/google';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import SimpleCrypto from 'simple-crypto-js';
@@ -14,19 +15,22 @@ export default function SignupPage() {
   const crypto = new SimpleCrypto(secretKey);
   const navigate=useNavigate();
 
-  try{
-    const getcookies = Cookies.get('linkupdata')
-    const { email } = crypto.decrypt(getcookies);
-
+    try{
+      const getcookies = Cookies.get('linkupdata')
+      const { email } = crypto.decrypt(getcookies);
+  
+      if(email){
+        navigate('/chat');
+      } 
+    } catch (err){
+      console.log(err);
+    }  
     if(email){
       navigate('/chat');
     }
   } catch (err){
     console.log(err);
   }
-
-
-
   const [formData,setFormData] = useState({
     fname:'',
     lname:'',
@@ -58,8 +62,10 @@ export default function SignupPage() {
       return;
     }
     try {
-      // const response = await axios.post('http://localhost:3001/auth/signup', formData);
-      const response = await axios.post('https://linkup-backend-k05n.onrender.com/auth/signup', formData);
+
+      const response = await axios.post('http://localhost:3001/auth/signup', formData);
+      //const response = await axios.post('https://linkup-backend-k05n.onrender.com/auth/signup', formData);
+
       setLoading(false);
       console.log(response);
 
@@ -76,6 +82,8 @@ export default function SignupPage() {
         setTimeout(()=>{
           navigate("/login");
         },1000);
+      }
+
       }
       else if(response.status === 404){
         setOutput("Unable to connect to server");
@@ -99,6 +107,10 @@ export default function SignupPage() {
     client_id: process.env.REACT_APP_CLIENT_ID,
     onSuccess: response => loginsuccess(response),
   });
+
+    useGoogleOneTapLogin({
+       onSuccess: credentialResponse => loginsuccess(credentialResponse),
+    });
 
   async function loginsuccess(response) {
     try {
@@ -148,6 +160,21 @@ export default function SignupPage() {
               {output}
             </div>
 
+
+          <button className="signup-btn"  onClick={handleSubmit}>
+            {loading===false?(
+              <div>Sign Up</div>
+            ):(
+              <div className="spinner-border" style={{height:"20px",width:"20px"}}></div>       
+            )}
+          </button>
+          <div>
+            Already have an account <Link to={'/login'}>log in</Link>
+          </div>
+          <div className="or">or</div>
+          <div className="google-signup-btn" onClick={googlelogin}>
+            continue with Google
+            <img src={googleicon} className="googleicon" alt="google-icon" />
             <button className="signup-btn"  onClick={handleSubmit}>
               {loading===false?(
                   <div>Sign Up</div>
@@ -162,7 +189,6 @@ export default function SignupPage() {
             <div className="google-signup-btn" onClick={googlelogin}>
               continue with Google
               <img src={googleicon} className="googleicon" alt="google-icon" />
-            </div>
           </div>
         </div>
       </>
